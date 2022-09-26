@@ -1,24 +1,17 @@
-﻿using UnityEngine;
-#if UNITY_EDITOR
+﻿#if UNITY_EDITOR
 using UnityEditor;
+using UnityEngine;
+using UnityEngine.SceneManagement;
 
-
-namespace Kirito_Solutions.UIExtensions
+namespace Automatic_UI_Anchoring.Editor
 {
-
-    public class AutomaticUIAnchoringEditor : Editor
+    public class AutomaticUIAnchoringEditor : UnityEditor.Editor
     {
-        private static void Anchor(RectTransform rectTransform)
+        private static void ChangeAnchorsPositions(RectTransform rectTransform, RectTransform parent)
         {
-            RectTransform parentRectTransform = null;
-            if (rectTransform.transform.parent)
-                parentRectTransform = rectTransform.transform.parent.GetComponent<RectTransform>();
-
-            if (!parentRectTransform)
-                return;
-
-            Undo.RecordObject(rectTransform, "Anchor UI Object");
-            Rect parentRect = parentRectTransform.rect;
+            Undo.RecordObject(rectTransform, "Anchor UI Objects");
+            Rect parentRect = parent.rect;
+            
             rectTransform.anchorMin = new Vector2(rectTransform.anchorMin.x + (rectTransform.offsetMin.x / parentRect.width),
                 rectTransform.anchorMin.y + (rectTransform.offsetMin.y / parentRect.height));
             rectTransform.anchorMax = new Vector2(rectTransform.anchorMax.x + (rectTransform.offsetMax.x / parentRect.width),
@@ -28,16 +21,18 @@ namespace Kirito_Solutions.UIExtensions
             rectTransform.pivot = new Vector2(0.5f, 0.5f);
         }
 
-        [MenuItem("Tools/Automatic UI Anchoring/Anchor Selected UI Objects _F1")]
-        private static void AnchorSelectedUIObjects()
+        [MenuItem("Tools/Automatic UI Anchoring/Anchor All UI Objects In Scene _F2")]
+        private static void AnchorAllUIObjectsInScene()
         {
-            for (int i = 0; i < Selection.gameObjects.Length; i++)
+            foreach (var root in SceneManager.GetActiveScene().GetRootGameObjects())
             {
-                RectTransform rectTransform = Selection.gameObjects[i].GetComponent<RectTransform>();
-                if (rectTransform)
-                    Anchor(rectTransform);
+                foreach (var rectTransform in root.GetComponentsInChildren<RectTransform>())
+                {
+                    if(rectTransform.parent is RectTransform parent)
+                        ChangeAnchorsPositions(rectTransform, parent);
+                }
             }
         }
     }
-}//namespace
+}
 #endif
